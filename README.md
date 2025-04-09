@@ -1,21 +1,31 @@
-# 🤖 FlashcardBot - Telegram Flashcards com Repetição Espaçada
+# 🤖 FlashcardBot - Telegram Flashcards com Backup e Restauração
 
-Este é um bot de estudo via Telegram que permite criar, armazenar e revisar flashcards com base em repetição espaçada. O objetivo é facilitar a memorização de conteúdos por meio de revisões programadas.
+Bot para criar e revisar flashcards via Telegram, com salvamento local, backup manual e suporte a restauração.
 
-## 🚀 Funcionalidades
+## Funcionalidades
 
-- ✅ Criação de flashcards com múltiplos campos (pergunta, resposta e categoria)
-- 🔁 Sistema de revisão com periodicidade ajustável
-- 📊 Pontuação automática de acertos e erros
-- ✏️ Mensagens personalizadas de feedback
-- 🗂️ Armazenamento local em arquivo JSON
+- Criação de flashcards com categoria
+- Salvamento por usuário
+- Backup local por comando
+- Restauração a partir de arquivo JSON
+- Pronto para deploy no Render
 
-## 📦 Requisitos
+## Comandos
 
-- Python 3.8+
-- `python-telegram-bot==20.7`
+- `/start` — Inicia o bot
+- `/novo` — Cria novo flashcard
+- `/backup` — Gera e envia backup JSON
+- `/restaurar` — Restaura a partir de backup JSON enviado
 
-Instale as dependências com:
+## Deploy no Render
 
-```bash
-pip install -r requirements.txt
+1. Crie um repositório no GitHub com este projeto
+2. Vá para [https://render.com](https://render.com)
+3. Crie um novo serviço Web
+4. Escolha seu repositório
+5. Configure:
+   - **Start command:** `python bot.py`
+   - **Environment:** Python 3.10+
+   - **Secret environment variable:** `TOKEN` com seu token do BotFather
+
+Pronto! O bot ficará online 24/7.
