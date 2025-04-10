@@ -1,31 +1,34 @@
-# 🤖 FlashcardBot - Telegram Flashcards com Backup e Restauração
+# Flashcard Bot para Telegram 📚
 
-Bot para criar e revisar flashcards via Telegram, com salvamento local, backup manual e suporte a restauração.
+Um bot de Telegram com suporte a flashcards e quizzes, totalmente local, com armazenamento em SQLite.
 
 ## Funcionalidades
-
-- Criação de flashcards com categoria
-- Salvamento por usuário
-- Backup local por comando
-- Restauração a partir de arquivo JSON
-- Pronto para deploy no Render
-
-## Comandos
-
-- `/start` — Inicia o bot
-- `/novo` — Cria novo flashcard
-- `/backup` — Gera e envia backup JSON
-- `/restaurar` — Restaura a partir de backup JSON enviado
+- Criar flashcards com frente/verso, deck e categoria
+- Criar quizzes com múltiplas alternativas
+- Revisões com base em periodicidade
+- Importação de planilhas `.csv` ou `.xlsx`
+- Backup automático do banco
+- Painel de desempenho (em desenvolvimento)
 
 ## Deploy no Render
 
-1. Crie um repositório no GitHub com este projeto
-2. Vá para [https://render.com](https://render.com)
-3. Crie um novo serviço Web
-4. Escolha seu repositório
-5. Configure:
-   - **Start command:** `python bot.py`
-   - **Environment:** Python 3.10+
-   - **Secret environment variable:** `TOKEN` com seu token do BotFather
+### Pré-requisitos:
+- Conta no [Render](https://render.com/)
+- Repositório no GitHub com este código
 
-Pronto! O bot ficará online 24/7.
+### Variáveis de Ambiente:
+- `BOT_TOKEN`: Token do seu bot no Telegram
+- `APP_URL`: URL pública fornecida pelo Render (ex: `https://seubot.onrender.com`)
+
+### Passos:
+1. Faça fork ou clone deste repositório.
+2. Configure o deploy no Render como **Web Service**.
+3. Use `render.yaml` para configuração automática.
+4. O serviço iniciará com webhook e será acessado automaticamente pelo Telegram.
+
+## Templates
+Use os comandos:
+- `/modelo` – Baixa o modelo para flashcards
+- `/modelo_quiz` – Baixa o modelo para quizzes
+
+---
