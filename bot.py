@@ -117,7 +117,21 @@ def backup_database():
     shutil.copyfile(DB_PATH, BACKUP_PATH)
 
 def start(update: Update, context: CallbackContext):
-    update.message.reply_text("Bem-vindo ao seu bot local de flashcards! Use /add para criar, /review para revisar, /list para listar, /export para exportar, /delete <id> para excluir, /backup para salvar uma cópia do banco, /upload para importar uma planilha, ou /modelo para baixar o template.")
+    msg = (
+        "👋 Bem-vindo ao seu bot local de Flashcards e Quizzes!\n\n"
+        "📌 *Comandos disponíveis:*\n"
+        "/add – Criar um novo flashcard manualmente\n"
+        "/review – Revisar flashcards disponíveis\n"
+        "/list – Listar todos os flashcards\n"
+        "/delete <id> – Excluir um flashcard pelo ID\n"
+        "/export – Exportar flashcards para CSV\n"
+        "/backup – Gerar um backup do banco\n"
+        "/upload – Enviar planilha com flashcards\n"
+        "/modelo – Baixar template de flashcards\n"
+        "/modelo_quiz – Baixar template de quizzes\n\n"
+        "❗ Envie arquivos CSV ou Excel conforme os templates para importar dados corretamente."
+    )
+    update.message.reply_text(msg, parse_mode='Markdown')
 
 def backup_command(update: Update, context: CallbackContext):
     backup_database()
@@ -292,7 +306,7 @@ def list_flashcards(update: Update, context: CallbackContext):
     if not cards:
         update.message.reply_text("Nenhum flashcard cadastrado.")
     else:
-       msg = "Seus flashcards:\n" + "\n".join([f"ID {cid}: {q}" for cid, q in cards])
+        msg = "Seus flashcards:\n" + "\n".join([f"ID {cid}: {q}" for cid, q in cards])
 
 
 def delete_flashcard(update: Update, context: CallbackContext):
