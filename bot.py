@@ -172,6 +172,163 @@ def handle_upload(update: Update, context: CallbackContext):
 
     return ConversationHandler.END
 
+def add_flashcard(update: Update, context: CallbackContext):
+    update.message.reply_text("Digite a pergunta (use | para separar campos se quiser):")
+    return ADD_QUESTION
+
+def save_question(update: Update, context: CallbackContext):
+    context.user_data['question'] = update.message.text
+    update.message.reply_text("Agora digite a resposta:")
+    return ADD_ANSWER
+
+def save_answer(update: Update, context: CallbackContext):
+    context.user_data['answer'] = update.message.text
+    update.message.reply_text("Intervalo de repetição (em dias):")
+    return SET_INTERVAL
+
+def set_interval(update: Update, context: CallbackContext):
+    try:
+        interval = int(update.message.text)
+        context.user_data['interval'] = interval
+        update.message.reply_text("Mensagem de sucesso personalizada:")
+        return SET_SUCCESS_MSG
+    except ValueError:
+        update.message.reply_text("Por favor, digite um número inteiro.")
+        return SET_INTERVAL
+
+def set_success_msg(update: Update, context: CallbackContext):
+    context.user_data['success_msg'] = update.message.text
+    update.message.reply_text("Mensagem de erro personalizada:")
+    return SET_FAIL_MSG
+
+def set_fail_msg(update: Update, context: CallbackContext):
+    context.user_data['fail_msg'] = update.message.text
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('''
+        INSERT INTO flashcards (question, answer, interval, success_msg, fail_msg)
+        VALUES (?, ?, ?, ?, ?)
+    ''', (
+        context.user_data['question'],
+        context.user_data['answer'],
+        context.user_data['interval'],
+        context.user_data['success_msg'],
+        context.user_data['fail_msg']
+    ))
+    flashcard_id = cur.lastrowid
+    cur.execute('INSERT INTO scores (flashcard_id) VALUES (?)', (flashcard_id,))
+    conn.commit()
+    conn.close()
+
+    update.message.reply_text("Flashcard salvo com sucesso! Use /review para revisar depois.")
+    return ConversationHandler.END
+
+def cancel(update: Update, context: CallbackContext):
+    update.message.reply_text("Operação cancelada.")
+    return ConversationHandler.END
+
+def review(update: Update, context: CallbackContext):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('SELECT id, question, answer, interval, last_review FROM flashcards')
+    cards = cur.fetchall()
+    conn.close()
+
+    now = datetime.now()
+    for card in cards:
+        fid, question, answer, interval, last_review = card
+        if not last_review or datetime.strptime(last_review, "%Y-%m-%d") + timedelta(days=interval) <= now:
+            context.user_data['review_card'] = {
+                'id': fid,
+                'question': question,
+                'answer': answer
+            }
+            buttons = [[InlineKeyboardButton("Responder", callback_data=f"review_{fid}")]]
+            update.message.reply_text(f"Pergunta:\n{question}", reply_markup=InlineKeyboardMarkup(buttons))
+
+            return REVIEW_ANSWER
+
+    update.message.reply_text("Nenhum flashcard disponível para revisão agora.")
+    return ConversationHandler.END
+
+def handle_review_response(update: Update, context: CallbackContext):
+    query = update.callback_query
+    query.answer()
+    query.edit_message_text("Digite a resposta:")
+    return REVIEW_ANSWER
+
+def check_review_answer(update: Update, context: CallbackContext):
+    user_answer = update.message.text.strip().lower()
+    card = context.user_data.get('review_card')
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('SELECT success_msg, fail_msg FROM flashcards WHERE id = ?', (card['id'],))
+    row = cur.fetchone()
+    success_msg, fail_msg = row
+
+    if user_answer == card['answer'].strip().lower():
+        msg = success_msg
+        cur.execute('UPDATE scores SET correct = correct + 1 WHERE flashcard_id = ?', (card['id'],))
+        cur.execute('UPDATE flashcards SET last_review = ? WHERE id = ?', (datetime.now().strftime("%Y-%m-%d"), card['id']))
+    else:
+        msg = f"{fail_msg}\nResposta correta: {card['answer']}"
+
+        cur.execute('UPDATE scores SET wrong = wrong + 1 WHERE flashcard_id = ?', (card['id'],))
+
+    conn.commit()
+    conn.close()
+    update.message.reply_text(msg)
+    return ConversationHandler.END
+
+def list_flashcards(update: Update, context: CallbackContext):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('SELECT id, question FROM flashcards')
+    cards = cur.fetchall()
+    conn.close()
+
+    if not cards:
+        update.message.reply_text("Nenhum flashcard cadastrado.")
+    else:
+       msg = "Seus flashcards:\n" + "\n".join([f"ID {cid}: {q}" for cid, q in cards])
+
+
+def delete_flashcard(update: Update, context: CallbackContext):
+    try:
+        fid = int(context.args[0])
+    except (IndexError, ValueError):
+        update.message.reply_text("Uso: /delete <id>")
+        return
+
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('DELETE FROM flashcards WHERE id = ?', (fid,))
+    cur.execute('DELETE FROM scores WHERE flashcard_id = ?', (fid,))
+    conn.commit()
+    conn.close()
+
+    update.message.reply_text(f"Flashcard ID {fid} removido.")
+
+def export_flashcards(update: Update, context: CallbackContext):
+    conn = sqlite3.connect(DB_PATH)
+    cur = conn.cursor()
+    cur.execute('SELECT question, answer, interval, success_msg, fail_msg, last_review, deck, category FROM flashcards')
+    cards = cur.fetchall()
+    conn.close()
+
+    if not cards:
+        update.message.reply_text("Nenhum flashcard para exportar.")
+        return
+
+    with open(EXPORT_PATH, 'w', newline='', encoding='utf-8') as csvfile:
+        writer = csv.writer(csvfile)
+        writer.writerow(['Pergunta', 'Resposta', 'Intervalo', 'Sucesso', 'Erro', 'Última Revisão', 'Deck', 'Categoria'])
+        writer.writerows(cards)
+
+    update.message.reply_document(document=open(EXPORT_PATH, 'rb'), filename='flashcards_export.csv')
+
 def automatic_backup(interval_minutes=60):
     while True:
         sleep(interval_minutes * 60)
