@@ -357,7 +357,7 @@ def main():
 
     PORT = int(os.environ.get('PORT', 8443))
     TOKEN = os.environ.get('BOT_TOKEN', 'SEU_TOKEN_AQUI')
-    APP_URL = os.environ.get('APP_URL', 'https://seu-app-no-render.onrender.com')
+    APP_URL = os.environ.get('APP_URL', 'https://flashcard-interview.onrender.com')
 
     updater = Updater(TOKEN, use_context=True)
     dp = updater.dispatcher
